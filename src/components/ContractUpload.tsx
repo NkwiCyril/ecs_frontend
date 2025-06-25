@@ -8,13 +8,28 @@ import { contractsAPI } from '@/lib/api';
 import { Upload, FileText, AlertCircle, CheckCircle, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 
+interface UploadResult {
+  contract_id: string;
+  language: string;
+  entities_found: number;
+}
+
+interface ApiError {
+  response?: {
+    data?: {
+      error?: string;
+    };
+  };
+  message?: string;
+}
+
 export default function ContractUpload() {
   const router = useRouter();
   const [dragActive, setDragActive] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [summaryType, setSummaryType] = useState<'brief' | 'standard' | 'detailed'>('standard');
-  const [uploadResult, setUploadResult] = useState<any>(null);
+  const [uploadResult, setUploadResult] = useState<UploadResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const handleDrag = useCallback((e: React.DragEvent) => {
@@ -82,8 +97,9 @@ export default function ContractUpload() {
       setTimeout(() => {
         router.push(`/contract/${result.contract_id}`);
       }, 2000);
-    } catch (error: any) {
-      setError(error.response?.data?.error || 'Upload failed');
+    } catch (error) {
+      const apiError = error as ApiError;
+      setError(apiError.response?.data?.error || apiError.message || 'Upload failed');
     } finally {
       setUploading(false);
     }
@@ -227,7 +243,7 @@ export default function ContractUpload() {
                         name="summaryType"
                         value={option.value}
                         checked={summaryType === option.value}
-                        onChange={(e) => setSummaryType(e.target.value as any)}
+                        onChange={(e) => setSummaryType(e.target.value as 'brief' | 'standard' | 'detailed')}
                         className="sr-only"
                       />
                       <div
