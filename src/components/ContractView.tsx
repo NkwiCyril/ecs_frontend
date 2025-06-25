@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { contractsAPI, summariesAPI } from '@/lib/api';
@@ -19,7 +19,6 @@ import {
   Building,
   DollarSign,
   Calendar,
-  MapPin,
   Info
 } from 'lucide-react';
 import Link from 'next/link';
@@ -30,22 +29,20 @@ interface ContractViewProps {
   contractId: number;
 }
 
+type SummaryType = 'brief' | 'standard' | 'detailed';
+
 export default function ContractView({ contractId }: ContractViewProps) {
   const [contract, setContract] = useState<Contract | null>(null);
   const [summaries, setSummaries] = useState<Summary[]>([]);
   const [entities, setEntities] = useState<Entity[]>([]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
-  const [selectedSummaryType, setSelectedSummaryType] = useState<'brief' | 'standard' | 'detailed'>('standard');
+  const [selectedSummaryType, setSelectedSummaryType] = useState<SummaryType>('standard');
   const [feedbackText, setFeedbackText] = useState('');
   const [feedbackRating, setFeedbackRating] = useState(5);
   const [showFeedback, setShowFeedback] = useState(false);
 
-  useEffect(() => {
-    fetchContractData();
-  }, [contractId]);
-
-  const fetchContractData = async () => {
+  const fetchContractData = useCallback(async () => {
     try {
       const [contractResponse, summariesResponse] = await Promise.all([
         contractsAPI.getById(contractId),
@@ -60,7 +57,11 @@ export default function ContractView({ contractId }: ContractViewProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [contractId]);
+
+  useEffect(() => {
+    fetchContractData();
+  }, [fetchContractData]);
 
   const generateSummary = async () => {
     if (!contract) return;
@@ -125,6 +126,10 @@ export default function ContractView({ contractId }: ContractViewProps) {
     document.body.appendChild(element);
     element.click();
     document.body.removeChild(element);
+  };
+
+  const handleSummaryTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedSummaryType(e.target.value as SummaryType);
   };
 
   if (loading) {
@@ -199,7 +204,7 @@ export default function ContractView({ contractId }: ContractViewProps) {
                   <div className="flex items-center gap-2">
                     <select
                       value={selectedSummaryType}
-                      onChange={(e) => setSelectedSummaryType(e.target.value as any)}
+                      onChange={handleSummaryTypeChange}
                       className="text-sm border rounded px-2 py-1"
                     >
                       <option value="brief">Brief</option>
@@ -340,7 +345,7 @@ export default function ContractView({ contractId }: ContractViewProps) {
                   <div className="text-center py-8">
                     <Sparkles className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                     <h3 className="text-lg font-medium text-gray-900 mb-2">No Summary Generated</h3>
-                    <p className="text-gray-600 mb-4">Click "Generate Summary" to create an AI-powered summary of this contract</p>
+                    <p className="text-gray-600 mb-4">Click &quot;Generate Summary&quot; to create an AI-powered summary of this contract</p>
                   </div>
                 )}
               </CardContent>
